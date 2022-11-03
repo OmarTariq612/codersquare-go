@@ -20,10 +20,6 @@ func main() {
 	r := gin.New()
 	r.Use(gin.Logger(), middlewares.ErrorMiddleware())
 
-	r.GET("/panic", func(ctx *gin.Context) {
-		panic("error occured")
-	})
-
 	// users
 	{
 		r.POST("/api/v1/signup", handlers.SignupHandler) // signup
