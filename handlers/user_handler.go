@@ -15,9 +15,17 @@ import (
 
 const validPeriod = 15 * 24 * time.Hour // 15 days
 
-func SignupHandler(c *gin.Context) {
+type UserHandler struct {
+	db datastore.Database
+}
+
+func NewUserHandler(db datastore.Database) UserHandler {
+	return UserHandler{db: db}
+}
+
+func (u UserHandler) Signup(c *gin.Context) {
 	var userData SignupRequest
-	if errs := BindJsonErrorHandler(c, &userData); errs != nil {
+	if errs := utils.BindJsonVerifier(c, &userData); errs != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
@@ -29,7 +37,7 @@ func SignupHandler(c *gin.Context) {
 	}
 	user := &types.User{ID: uuid.NewString(), Firstname: userData.Firstname, Lastname: userData.Lastname, Username: userData.Username, Email: userData.Email, Password: string(hashedPassword), CreatedAt: time.Now().Unix()}
 
-	if err := datastore.DB.CreateUser(user); err != nil {
+	if err := u.db.CreateUser(user); err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
@@ -43,16 +51,16 @@ func SignupHandler(c *gin.Context) {
 	c.JSON(http.StatusCreated, &SignupResponse{JWT: token})
 }
 
-func SigninHandler(c *gin.Context) {
+func (u UserHandler) Signin(c *gin.Context) {
 	var userData SigninRequest
-	if errs := BindJsonErrorHandler(c, &userData); errs != nil {
+	if errs := utils.BindJsonVerifier(c, &userData); errs != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
-	user := datastore.DB.GetUserByUsername(userData.Login)
+	user := u.db.GetUserByUsername(userData.Login)
 	if user == nil {
-		user = datastore.DB.GetUserByEmail(userData.Login)
+		user = u.db.GetUserByEmail(userData.Login)
 	}
 
 	if user == nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userData.Password)) != nil {
@@ -66,14 +74,32 @@ func SigninHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, &SigninResponse{User: struct {
-		ID        string `json:"id"`
-		Email     string `json:"email"`
-		Username  string `json:"username"`
-		Firstname string `json:"firstname"`
-		Lastname  string `json:"lastname"`
-		CreatedAt int64  `json:"created_at"`
-	}{
-		ID: user.ID, Email: user.Email, Username: user.Username, Firstname: user.Firstname, Lastname: user.Lastname, CreatedAt: user.CreatedAt,
-	}, JWT: token})
+	c.JSON(http.StatusOK, &SigninResponse{User: User{ID: user.ID, Email: user.Email, Username: user.Username, Firstname: user.Firstname, Lastname: user.Lastname}, JWT: token})
+}
+
+func (u UserHandler) GetUser(c *gin.Context) {
+	var userData GetUserRequest
+	if errs := utils.BindUriVerifier(c, &userData); errs != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		return
+	}
+
+	user := u.db.GetUserByID(userData.ID)
+	if user == nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "could not find user with the specified id"})
+		return
+	}
+
+	c.JSON(http.StatusOK, &GetUserResponse{ID: user.ID, Username: user.Username, Firstname: user.Firstname, Lastname: user.Lastname})
+}
+
+func (u UserHandler) GetCurrentUser(c *gin.Context) {
+	userID := c.GetString("user_id")
+	user := u.db.GetUserByID(userID)
+	if user == nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "could not find user with the provided id from the middleware"})
+		return
+	}
+
+	c.JSON(http.StatusOK, &GetCurrentUserResponse{User: User{ID: user.ID, Email: user.Email, Username: user.Username, Firstname: user.Firstname, Lastname: user.Lastname}})
 }

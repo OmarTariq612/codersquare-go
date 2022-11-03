@@ -20,17 +20,32 @@ type SigninRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-type SigninResponse struct {
-	User struct {
-		ID        string `json:"id"`
-		Email     string `json:"email"`
-		Username  string `json:"username"`
-		Firstname string `json:"firstname"`
-		Lastname  string `json:"lastname"`
-		CreatedAt int64  `json:"created_at"`
-	} `json:"user"`
+type User struct {
+	ID        string `json:"id"`
+	Email     string `json:"email"`
+	Username  string `json:"username"`
+	Firstname string `json:"firstname"`
+	Lastname  string `json:"lastname"`
+}
 
-	JWT string `json:"jwt"`
+type SigninResponse struct {
+	User `json:"user"`
+	JWT  string `json:"jwt"`
+}
+
+type GetUserRequest struct {
+	ID string `uri:"id" binding:"required,uuid"`
+}
+
+type GetUserResponse struct {
+	ID        string `json:"id"`
+	Username  string `json:"username"`
+	Firstname string `json:"firstname"`
+	Lastname  string `json:"lastname"`
+}
+
+type GetCurrentUserResponse struct {
+	User
 }
 
 // =====================================
@@ -124,12 +139,4 @@ type ListLikesRequest struct {
 
 type ListLikesResponse struct {
 	Likes uint64 `json:"likes"`
-}
-
-// =====================================
-
-// General
-type APIError struct {
-	Field  string `json:"field"`
-	Reason string `json:"reason"`
 }

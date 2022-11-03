@@ -1,4 +1,4 @@
-package handlers
+package utils
 
 import (
 	"encoding/json"
@@ -9,7 +9,13 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func BindJsonErrorHandler(c *gin.Context, obj any) []*APIError {
+// General
+type APIError struct {
+	Field  string `json:"field"`
+	Reason string `json:"reason"`
+}
+
+func BindJsonVerifier(c *gin.Context, obj any) []*APIError {
 	var errors []*APIError
 	if err := c.ShouldBindJSON(obj); err != nil {
 		switch err := err.(type) {
@@ -28,5 +34,21 @@ func BindJsonErrorHandler(c *gin.Context, obj any) []*APIError {
 		}
 	}
 
+	return errors
+}
+
+func BindUriVerifier(c *gin.Context, obj any) []*APIError {
+	var errors []*APIError
+	if err := c.ShouldBindUri(obj); err != nil {
+		if errs, ok := err.(validator.ValidationErrors); ok {
+			t := reflect.TypeOf(obj).Elem()
+			for _, er := range errs {
+				sf, _ := t.FieldByName(er.Field())
+				errors = append(errors, &APIError{Field: sf.Tag.Get("uri"), Reason: er.Tag()})
+			}
+		} else {
+			errors = append(errors, &APIError{Field: "unspecified", Reason: err.Error()})
+		}
+	}
 	return errors
 }
