@@ -15,15 +15,15 @@ import (
 
 const validPeriod = 15 * 24 * time.Hour // 15 days
 
-type UserHandler struct {
+type UsersHandler struct {
 	db datastore.Database
 }
 
-func NewUserHandler(db datastore.Database) UserHandler {
-	return UserHandler{db: db}
+func NewUsersHandler(db datastore.Database) UsersHandler {
+	return UsersHandler{db: db}
 }
 
-func (u UserHandler) Signup(c *gin.Context) {
+func (u UsersHandler) Signup(c *gin.Context) {
 	var userData SignupRequest
 	if errs := utils.BindJsonVerifier(c, &userData); errs != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
@@ -51,7 +51,7 @@ func (u UserHandler) Signup(c *gin.Context) {
 	c.JSON(http.StatusCreated, &SignupResponse{JWT: token})
 }
 
-func (u UserHandler) Signin(c *gin.Context) {
+func (u UsersHandler) Signin(c *gin.Context) {
 	var userData SigninRequest
 	if errs := utils.BindJsonVerifier(c, &userData); errs != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
@@ -77,7 +77,7 @@ func (u UserHandler) Signin(c *gin.Context) {
 	c.JSON(http.StatusOK, &SigninResponse{User: User{ID: user.ID, Email: user.Email, Username: user.Username, Firstname: user.Firstname, Lastname: user.Lastname}, JWT: token})
 }
 
-func (u UserHandler) GetUser(c *gin.Context) {
+func (u UsersHandler) GetUser(c *gin.Context) {
 	var userData GetUserRequest
 	if errs := utils.BindUriVerifier(c, &userData); errs != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
@@ -93,7 +93,7 @@ func (u UserHandler) GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, &GetUserResponse{ID: user.ID, Username: user.Username, Firstname: user.Firstname, Lastname: user.Lastname})
 }
 
-func (u UserHandler) GetCurrentUser(c *gin.Context) {
+func (u UsersHandler) GetCurrentUser(c *gin.Context) {
 	userID := c.GetString("user_id")
 	user := u.db.GetUserByID(userID)
 	if user == nil {

@@ -120,21 +120,21 @@ type ListCommentsResponse struct {
 // Likes
 type CreateLikeRequest struct {
 	// UserID string `json:"user_id" binding:"required,uuid"`
-	PostID string `uri:"id" binding:"required,uuid"`
+	PostID string `uri:"post_id" binding:"required,uuid"`
 }
 
 type CreateLikeResponse struct {
 }
 
 type DeleteLikeRequest struct {
-	PostID string `uri:"id" binding:"required,uuid"`
+	PostID string `uri:"post_id" binding:"required,uuid"`
 }
 
 type DeleteLikeResponse struct {
 }
 
 type ListLikesRequest struct {
-	PostID string `uri:"id" binding:"required,uuid"`
+	PostID string `uri:"post_id" binding:"required,uuid"`
 }
 
 type ListLikesResponse struct {

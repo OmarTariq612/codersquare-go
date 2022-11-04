@@ -125,6 +125,32 @@ func (db *SqliteDB) CreateLike(l *types.Like) error {
 	return err
 }
 
+func (db *SqliteDB) GetLikes(postID string) (uint64, error) {
+	row := db.QueryRow("SELECT COUNT(*) as count FROM likes WHERE post_id = ?", postID)
+	if row.Err() != nil {
+		return 0, row.Err()
+	}
+	var count uint64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (db *SqliteDB) DeleteLike(l *types.Like) error {
+	_, err := db.Exec("DELETE FROM likes WHERE (user_id = ?) AND (post_id = ?)", l.UserID, l.PostID)
+	return err
+}
+
+func (db *SqliteDB) Exists(l *types.Like) bool {
+	row := db.QueryRow("SELECT 1 FROM likes WHERE (user_id = ?) AND (post_id = ?)", l.UserID, l.PostID)
+	var value byte
+	if err := row.Scan(&value); err != nil {
+		return false
+	}
+	return true
+}
+
 func (db *SqliteDB) CreateComment(c *types.Comment) error {
 	_, err := db.Exec("INSERT INTO comments (id, user_id, post_id, text, posted_at) VALUES (?,?,?,?,?)", c.ID, c.UserID, c.PostID, c.Text, c.PostedAt)
 	return err

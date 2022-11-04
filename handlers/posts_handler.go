@@ -32,7 +32,7 @@ func (p PostsHandler) List(c *gin.Context) {
 func (p PostsHandler) Create(c *gin.Context) {
 	// userID := c.MustGet("user_id").(string)
 	userID := c.GetString("user_id")
-	post := CreatePostRequest{}
+	var post CreatePostRequest
 	if errs := utils.BindJsonVerifier(c, &post); errs != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
