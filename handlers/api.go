@@ -87,8 +87,14 @@ type DeletePostResponse struct {
 // Comments
 type CreateCommentRequest struct {
 	// UserID string `json:"user_id" binding:"required,uuid"`
-	PostID string `uri:"id" binding:"required,uuid"`
-	Text   string `json:"text" binding:"required"`
+	// PostID string `uri:"post_id" binding:"required,uuid"`
+	// Text string `json:"text" binding:"required"`
+	PostID struct {
+		PostID string `uri:"post_id" json:"post_id" binding:"required,uuid"`
+	}
+	Text struct {
+		Text string `json:"text" binding:"required"`
+	}
 }
 
 type CreateCommentResponse struct {
@@ -102,7 +108,7 @@ type DeleteCommentResponse struct {
 }
 
 type CountCommentsRequest struct {
-	PostID string `uri:"id" binding:"required,uuid"`
+	PostID string `uri:"post_id" binding:"required,uuid"`
 }
 
 type CountCommentsResponse struct {
@@ -110,7 +116,7 @@ type CountCommentsResponse struct {
 }
 
 type ListCommentsRequest struct {
-	PostID string `uri:"id" binding:"required,uuid"`
+	PostID string `uri:"post_id" binding:"required,uuid"`
 }
 
 type ListCommentsResponse struct {

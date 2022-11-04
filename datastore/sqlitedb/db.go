@@ -152,7 +152,7 @@ func (db *SqliteDB) Exists(l *types.Like) bool {
 }
 
 func (db *SqliteDB) CreateComment(c *types.Comment) error {
-	_, err := db.Exec("INSERT INTO comments (id, user_id, post_id, text, posted_at) VALUES (?,?,?,?,?)", c.ID, c.UserID, c.PostID, c.Text, c.PostedAt)
+	_, err := db.Exec("INSERT INTO comments (id, user_id, post_id, comment, posted_at) VALUES (?,?,?,?,?)", c.ID, c.UserID, c.PostID, c.Text, c.PostedAt)
 	return err
 }
 
@@ -175,6 +175,30 @@ func (db *SqliteDB) ListComments(postID string) []*types.Comment {
 func (db *SqliteDB) DeleteComment(id string) error {
 	_, err := db.Exec("DELETE FROM comments where id = ?", id)
 	return err
+}
+
+func (db *SqliteDB) CountComments(postID string) (uint64, error) {
+	row := db.QueryRow("SELECT COUNT(*) as count FROM comments WHERE post_id = ?", postID)
+	if row.Err() != nil {
+		return 0, row.Err()
+	}
+	var count uint64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (db *SqliteDB) GetCommentByID(id string) *types.Comment {
+	row := db.QueryRow("SELECT * FROM comments WHERE id = ?", id)
+	if row.Err() != nil {
+		return nil
+	}
+	comment := &types.Comment{}
+	if err := row.Scan(&comment.ID, &comment.UserID, &comment.PostID, &comment.Text, &comment.PostedAt); err != nil {
+		return nil
+	}
+	return comment
 }
 
 // var _ datastore.Database = (*SqliteDB)(nil)

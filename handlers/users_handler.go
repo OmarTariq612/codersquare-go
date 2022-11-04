@@ -23,7 +23,7 @@ func NewUsersHandler(db datastore.Database) UsersHandler {
 	return UsersHandler{db: db}
 }
 
-func (u UsersHandler) Signup(c *gin.Context) {
+func (rh UsersHandler) Signup(c *gin.Context) {
 	var userData SignupRequest
 	if errs := utils.BindJsonVerifier(c, &userData); errs != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
@@ -37,7 +37,7 @@ func (u UsersHandler) Signup(c *gin.Context) {
 	}
 	user := &types.User{ID: uuid.NewString(), Firstname: userData.Firstname, Lastname: userData.Lastname, Username: userData.Username, Email: userData.Email, Password: string(hashedPassword), CreatedAt: time.Now().Unix()}
 
-	if err := u.db.CreateUser(user); err != nil {
+	if err := rh.db.CreateUser(user); err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
@@ -51,16 +51,16 @@ func (u UsersHandler) Signup(c *gin.Context) {
 	c.JSON(http.StatusCreated, &SignupResponse{JWT: token})
 }
 
-func (u UsersHandler) Signin(c *gin.Context) {
+func (uh UsersHandler) Signin(c *gin.Context) {
 	var userData SigninRequest
 	if errs := utils.BindJsonVerifier(c, &userData); errs != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
-	user := u.db.GetUserByUsername(userData.Login)
+	user := uh.db.GetUserByUsername(userData.Login)
 	if user == nil {
-		user = u.db.GetUserByEmail(userData.Login)
+		user = uh.db.GetUserByEmail(userData.Login)
 	}
 
 	if user == nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userData.Password)) != nil {
@@ -77,14 +77,14 @@ func (u UsersHandler) Signin(c *gin.Context) {
 	c.JSON(http.StatusOK, &SigninResponse{User: User{ID: user.ID, Email: user.Email, Username: user.Username, Firstname: user.Firstname, Lastname: user.Lastname}, JWT: token})
 }
 
-func (u UsersHandler) GetUser(c *gin.Context) {
+func (uh UsersHandler) GetUser(c *gin.Context) {
 	var userData GetUserRequest
 	if errs := utils.BindUriVerifier(c, &userData); errs != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
-	user := u.db.GetUserByID(userData.ID)
+	user := uh.db.GetUserByID(userData.ID)
 	if user == nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "could not find user with the specified id"})
 		return
@@ -93,9 +93,9 @@ func (u UsersHandler) GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, &GetUserResponse{ID: user.ID, Username: user.Username, Firstname: user.Firstname, Lastname: user.Lastname})
 }
 
-func (u UsersHandler) GetCurrentUser(c *gin.Context) {
+func (uh UsersHandler) GetCurrentUser(c *gin.Context) {
 	userID := c.GetString("user_id")
-	user := u.db.GetUserByID(userID)
+	user := uh.db.GetUserByID(userID)
 	if user == nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "could not find user with the provided id from the middleware"})
 		return

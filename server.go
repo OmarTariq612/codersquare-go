@@ -17,10 +17,10 @@ func main() {
 		panic(err)
 	}
 
-	// r := gin.Default()
+	r := gin.Default()
 
-	r := gin.New()
-	r.Use(gin.Logger(), middlewares.ErrorMiddleware())
+	// r := gin.New()
+	// r.Use(gin.Logger(), middlewares.ErrorMiddleware())
 
 	// healthz
 	r.GET("/api/v1/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "OK"}) })
@@ -42,6 +42,7 @@ func main() {
 		r.GET("/api/v1/posts", postsHandler.List)                                  // list posts
 		r.POST("/api/v1/posts", middlewares.AuthMiddleware(), postsHandler.Create) // create post
 		r.GET("/api/v1/posts/:id", middlewares.AuthMiddleware(), postsHandler.Get) // get post
+		// TODO: ADD DELETE
 	}
 
 	// likes
@@ -52,29 +53,14 @@ func main() {
 		r.DELETE("/api/v1/likes/:post_id", middlewares.AuthMiddleware(), likesHandler.Delete) // delete like /////////////////////
 	}
 
-	// r.POST("/testing/:name", func(ctx *gin.Context) {
-	// 	type request struct {
-	// 		Name string `uri:"name" json:"name" binding:"required"`
-	// 		Age  int    `json:"age" binding:"required"`
-	// 	}
-
-	// 	req := &request{}
-
-	// 	// name
-	// 	if err := ctx.ShouldBindUri(req); err != nil {
-	// 		log.Println(err)
-	// 	}
-
-	// 	req.Name = ""
-
-	// 	// age
-	// 	if err := ctx.ShouldBindBodyWith(req, binding.JSON); err != nil {
-	// 		// log.Println(err)
-	// 		panic(err)
-	// 	}
-
-	// 	ctx.JSON(http.StatusOK, gin.H{"user": req})
-	// })
+	// comments
+	{
+		commentsHandler := handlers.NewCommentsHandler(datastore.DB)
+		r.GET("/api/v1/comments/:post_id", commentsHandler.List)
+		r.GET("/api/v1/comments/:post_id/count", commentsHandler.Count)
+		r.POST("/api/v1/comments/:post_id", middlewares.AuthMiddleware(), commentsHandler.Create)
+		r.DELETE("/api/v1/comments/:id", middlewares.AuthMiddleware(), commentsHandler.Delete)
+	}
 
 	if err := r.Run(":5555"); err != nil {
 		fmt.Println(err)
