@@ -70,15 +70,15 @@ func (db *SqliteDB) DeleteUser(id string) error {
 	return err
 }
 
-func (db *SqliteDB) ListPosts() []*types.Post {
-	rows, err := db.Query("SELECT * FROM posts")
+func (db *SqliteDB) ListPosts(userID string) []*types.Post {
+	rows, err := db.Query("SELECT *, EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as liked FROM posts ORDER BY posted_at DESC", userID)
 	if err != nil {
 		return nil
 	}
 	posts := []*types.Post{}
 	for rows.Next() {
 		curr := &types.Post{}
-		if err := rows.Scan(&curr.ID, &curr.Title, &curr.URL, &curr.UserID, &curr.PostedAt); err != nil {
+		if err := rows.Scan(&curr.ID, &curr.Title, &curr.URL, &curr.UserID, &curr.PostedAt, &curr.Liked); err != nil {
 			return nil
 		}
 		posts = append(posts, curr)
@@ -91,13 +91,25 @@ func (db *SqliteDB) CreatePost(post *types.Post) error {
 	return err
 }
 
-func (db *SqliteDB) GetPostByID(id string) *types.Post {
-	row := db.QueryRow("SELECT * FROM posts WHERE id = ?", id)
+// func (db *SqliteDB) GetPostByID(id string) *types.Post {
+// 	row := db.QueryRow("SELECT * FROM posts WHERE id = ?", id)
+// 	if row.Err() != nil {
+// 		return nil
+// 	}
+// 	post := &types.Post{}
+// 	if err := row.Scan(&post.ID, &post.Title, &post.URL, &post.UserID, &post.PostedAt); err != nil {
+// 		return nil
+// 	}
+// 	return post
+// }
+
+func (db *SqliteDB) GetPost(postID, userID string) *types.Post {
+	row := db.QueryRow("SELECT *, EXISTS(SELECT 1 FROM likes WHERE likes.user_id = ? AND likes.post_id = ? ) as liked FROM posts WHERE id = ?", userID, postID, postID)
 	if row.Err() != nil {
 		return nil
 	}
 	post := &types.Post{}
-	if err := row.Scan(&post.ID, &post.Title, &post.URL, &post.UserID, &post.PostedAt); err != nil {
+	if err := row.Scan(&post.ID, &post.Title, &post.URL, &post.UserID, &post.PostedAt, &post.Liked); err != nil {
 		return nil
 	}
 	return post

@@ -24,6 +24,11 @@ func (lh LikesHandler) List(c *gin.Context) {
 		return
 	}
 
+	if lh.db.GetPost(likeData.PostID, "") == nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "the provided post id is not found"})
+		return
+	}
+
 	likesCount, err := lh.db.GetLikes(likeData.PostID)
 	if err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
@@ -41,7 +46,7 @@ func (lh LikesHandler) Create(c *gin.Context) {
 		return
 	}
 
-	if lh.db.GetPostByID(likeData.PostID) == nil {
+	if lh.db.GetPost(likeData.PostID, "") == nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "the provided post id is not found"})
 		return
 	}
@@ -69,12 +74,20 @@ func (lh LikesHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	if lh.db.GetPostByID(likeData.PostID) == nil {
+	// if lh.db.GetPostByID(likeData.PostID) == nil {
+	if lh.db.GetPost(likeData.PostID, "") == nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "the provided post id is not found"})
 		return
 	}
 
-	if err := lh.db.DeleteLike(&types.Like{UserID: userID, PostID: likeData.PostID}); err != nil {
+	like := &types.Like{UserID: userID, PostID: likeData.PostID}
+
+	if !lh.db.Exists(like) {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "like not found"})
+		return
+	}
+
+	if err := lh.db.DeleteLike(like); err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}

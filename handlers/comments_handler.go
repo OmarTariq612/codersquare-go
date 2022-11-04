@@ -26,7 +26,7 @@ func (ch CommentsHandler) List(c *gin.Context) {
 		return
 	}
 
-	if ch.db.GetPostByID(commentData.PostID) == nil {
+	if ch.db.GetPost(commentData.PostID, "") == nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "the provided post id is not found"})
 		return
 	}
@@ -52,7 +52,7 @@ func (ch CommentsHandler) Create(c *gin.Context) {
 		return
 	}
 
-	if ch.db.GetPostByID(commentData.PostID.PostID) == nil {
+	if ch.db.GetPost(commentData.PostID.PostID, "") == nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "the provided post id is not found"})
 		return
 	}
@@ -99,7 +99,7 @@ func (ch CommentsHandler) Count(c *gin.Context) {
 		return
 	}
 
-	if ch.db.GetPostByID(commentData.PostID) == nil {
+	if ch.db.GetPost(commentData.PostID, "") == nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "the provided post id is not found"})
 		return
 	}

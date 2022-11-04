@@ -18,6 +18,7 @@ type Post struct {
 	URL      string `json:"url"`
 	UserID   string `json:"user_id"`
 	PostedAt int64  `json:"posted_at"`
+	Liked    bool   `json:"liked"`
 }
 
 type Like struct {
