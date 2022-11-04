@@ -3,10 +3,13 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/OmarTariq612/codersquare-go/datastore"
 	"github.com/OmarTariq612/codersquare-go/handlers"
 	"github.com/OmarTariq612/codersquare-go/middlewares"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -17,10 +20,14 @@ func main() {
 		panic(err)
 	}
 
-	r := gin.Default()
+	env := os.Getenv("ENV")
+	gin.SetMode(env)
 
+	r := gin.Default()
 	// r := gin.New()
 	// r.Use(gin.Logger(), middlewares.ErrorMiddleware())
+
+	r.Use(cors.Default())
 
 	// healthz
 	r.GET("/api/v1/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "OK"}) })
@@ -36,14 +43,12 @@ func main() {
 		r.GET("/api/v1/users", middlewares.AuthMiddleware, userHandler.GetCurrentUser) // get by id
 	}
 
-	// r.Use(middlewares.AuthMiddleware())
-
 	// posts
 	{
 		postsHandler := handlers.NewPostsHandler(datastore.DB)
 		r.GET("/api/v1/posts", postsHandler.List)                                      // list posts
+		r.GET("/api/v1/posts/:id", postsHandler.Get)                                   // get post
 		r.POST("/api/v1/posts", middlewares.AuthMiddleware, postsHandler.Create)       // create post
-		r.GET("/api/v1/posts/:id", middlewares.AuthMiddleware, postsHandler.Get)       // get post
 		r.DELETE("/api/v1/posts/:id", middlewares.AuthMiddleware, postsHandler.Delete) // delete post
 	}
 
@@ -51,8 +56,8 @@ func main() {
 	{
 		likesHandler := handlers.NewLikesHandler(datastore.DB)
 		r.GET("/api/v1/likes/:post_id", likesHandler.List)                                  // list likes  (for a specific post)
-		r.POST("/api/v1/likes/:post_id", middlewares.AuthMiddleware, likesHandler.Create)   // create like /////////////////////
-		r.DELETE("/api/v1/likes/:post_id", middlewares.AuthMiddleware, likesHandler.Delete) // delete like /////////////////////
+		r.POST("/api/v1/likes/:post_id", middlewares.AuthMiddleware, likesHandler.Create)   // create like
+		r.DELETE("/api/v1/likes/:post_id", middlewares.AuthMiddleware, likesHandler.Delete) // delete like
 	}
 
 	// comments
@@ -64,7 +69,12 @@ func main() {
 		r.DELETE("/api/v1/comments/:id", middlewares.AuthMiddleware, commentsHandler.Delete)
 	}
 
-	if err := r.Run(":5555"); err != nil {
+	port, err := strconv.Atoi(os.Getenv("PORT"))
+	if err != nil || port == 0 {
+		port = 5555
+	}
+
+	if err := r.Run(fmt.Sprintf(":%d", port)); err != nil {
 		fmt.Println(err)
 	}
 }
