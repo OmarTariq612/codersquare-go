@@ -26,7 +26,17 @@ func NewUsersHandler(db datastore.Database) UsersHandler {
 func (rh UsersHandler) Signup(c *gin.Context) {
 	var userData SignupRequest
 	if errs := utils.BindJsonVerifier(c, &userData); errs != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": errs})
+		return
+	}
+
+	if rh.db.GetUserByEmail(userData.Email) != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": types.ErrDuplicateEmail})
+		return
+	}
+
+	if rh.db.GetUserByUsername(userData.Username) != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": types.ErrDuplicateUsername})
 		return
 	}
 
@@ -54,7 +64,7 @@ func (rh UsersHandler) Signup(c *gin.Context) {
 func (uh UsersHandler) Signin(c *gin.Context) {
 	var userData SigninRequest
 	if errs := utils.BindJsonVerifier(c, &userData); errs != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
@@ -64,13 +74,13 @@ func (uh UsersHandler) Signin(c *gin.Context) {
 	}
 
 	if user == nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userData.Password)) != nil {
-		c.AbortWithStatus(http.StatusUnauthorized)
+		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
 
 	token, err := utils.SignJWT(&types.JWTObject{RegisteredClaims: jwt.RegisteredClaims{ExpiresAt: jwt.NewNumericDate(time.Now().Add(validPeriod))}, UserID: user.ID})
 	if err != nil {
-		c.AbortWithStatus(http.StatusUnauthorized)
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
@@ -86,7 +96,7 @@ func (uh UsersHandler) GetUser(c *gin.Context) {
 
 	user := uh.db.GetUserByID(userData.ID)
 	if user == nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "could not find user with the specified id"})
+		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
 
@@ -97,7 +107,7 @@ func (uh UsersHandler) GetCurrentUser(c *gin.Context) {
 	userID := c.GetString("user_id")
 	user := uh.db.GetUserByID(userID)
 	if user == nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "could not find user with the provided id from the middleware"})
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 

@@ -12,12 +12,16 @@ func SignJWT(claims jwt.Claims) (string, error) {
 	return tokenString, err
 }
 
-func VerifyJWTCustom(tokenString string, claims jwt.Claims) (jwt.Claims, error) {
+func VerifyJWTCustom(tokenString string, claims jwt.Claims) (verifiedClaims jwt.Claims, err error, expired bool) {
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 		return []byte(os.Getenv("JWT_KEY")), nil
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Name}))
 	if err != nil {
-		return nil, err
+		// expired (signature is valid but token is expired)
+		if er, ok := err.(*jwt.ValidationError); ok && !er.Is(jwt.ErrSignatureInvalid) && er.Is(jwt.ErrTokenExpired) {
+			return nil, err, true
+		}
+		return nil, err, false // invalid or anything else
 	}
-	return token.Claims, nil
+	return token.Claims, nil, false
 }

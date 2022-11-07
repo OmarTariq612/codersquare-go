@@ -13,6 +13,7 @@ type Database interface {
 	dao.PostDAO
 	dao.LikeDAO
 	dao.CommentDAO
+	CloseConnection() error
 }
 
 // var DB Database = memorydb.NewMemoryDB()
@@ -26,4 +27,8 @@ func init() {
 		panic(err)
 	}
 	DB = sqlitedb.NewSqliteDB(path.Join(wd, "datastore", "sqlitedb", "db", "database.sqlite"))
+}
+
+func CloseDB() error {
+	return DB.CloseConnection()
 }

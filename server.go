@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -15,6 +16,12 @@ import (
 )
 
 func main() {
+	defer func() {
+		if err := datastore.CloseDB(); err != nil {
+			log.Println(err)
+		}
+	}()
+
 	err := godotenv.Load()
 	if err != nil {
 		panic(err)
@@ -32,7 +39,7 @@ func main() {
 	// healthz
 	r.GET("/api/v1/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "OK"}) })
 
-	r.Use(middlewares.ParseJWTMiddlware)
+	r.Use(middlewares.ParseJWTMiddleware(datastore.DB))
 
 	// users
 	{
@@ -75,6 +82,6 @@ func main() {
 	}
 
 	if err := r.Run(fmt.Sprintf(":%d", port)); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 }

@@ -24,6 +24,10 @@ func NewSqliteDB(path string) *SqliteDB {
 	return &SqliteDB{DB: conn}
 }
 
+func (db *SqliteDB) CloseConnection() error {
+	return db.Close()
+}
+
 func (db *SqliteDB) CreateUser(user *types.User) error {
 	_, err := db.Exec("INSERT INTO users (id, firstname, lastname, username, email, password, created_at) VALUES (?,?,?,?,?,?,?)", user.ID, user.Firstname, user.Lastname, user.Username, user.Email, user.Password, user.CreatedAt)
 	return err
@@ -90,18 +94,6 @@ func (db *SqliteDB) CreatePost(post *types.Post) error {
 	_, err := db.Exec("INSERT INTO posts (id, title, url, user_id, posted_at) VALUES (?,?,?,?,?)", post.ID, post.Title, post.URL, post.UserID, post.PostedAt)
 	return err
 }
-
-// func (db *SqliteDB) GetPostByID(id string) *types.Post {
-// 	row := db.QueryRow("SELECT * FROM posts WHERE id = ?", id)
-// 	if row.Err() != nil {
-// 		return nil
-// 	}
-// 	post := &types.Post{}
-// 	if err := row.Scan(&post.ID, &post.Title, &post.URL, &post.UserID, &post.PostedAt); err != nil {
-// 		return nil
-// 	}
-// 	return post
-// }
 
 func (db *SqliteDB) GetPost(postID, userID string) *types.Post {
 	row := db.QueryRow("SELECT *, EXISTS(SELECT 1 FROM likes WHERE likes.user_id = ? AND likes.post_id = ? ) as liked FROM posts WHERE id = ?", userID, postID, postID)

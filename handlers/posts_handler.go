@@ -23,7 +23,7 @@ func (ph PostsHandler) List(c *gin.Context) {
 	userID := c.GetString("user_id")
 	posts := ph.db.ListPosts(userID)
 	if posts == nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "could not list posts from the database"})
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
@@ -31,16 +31,15 @@ func (ph PostsHandler) List(c *gin.Context) {
 }
 
 func (ph PostsHandler) Create(c *gin.Context) {
-	// userID := c.MustGet("user_id").(string)
 	userID := c.GetString("user_id")
 	var post CreatePostRequest
 	if errs := utils.BindJsonVerifier(c, &post); errs != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
 	if post := ph.db.GetPostByURL(post.URL); post != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "duplicate post url"})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": types.ErrDuplicatePostURL})
 		return
 	}
 
@@ -56,18 +55,18 @@ func (ph PostsHandler) Delete(c *gin.Context) {
 	userID := c.GetString("user_id")
 	var postData DeletePostRequest
 	if errs := utils.BindUriVerifier(c, &postData); errs != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
 	post := ph.db.GetPost(postData.PostID, "")
 	if post == nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "the provided post id is not found"})
+		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
 
 	if post.UserID != userID {
-		c.AbortWithStatus(http.StatusUnauthorized)
+		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
 

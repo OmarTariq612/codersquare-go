@@ -22,12 +22,12 @@ func NewCommentsHandler(db datastore.Database) CommentsHandler {
 func (ch CommentsHandler) List(c *gin.Context) {
 	var commentData ListCommentsRequest
 	if errs := utils.BindUriVerifier(c, &commentData); errs != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
 	if ch.db.GetPost(commentData.PostID, "") == nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "the provided post id is not found"})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": types.ErrPostNotFound})
 		return
 	}
 
@@ -44,16 +44,16 @@ func (ch CommentsHandler) Create(c *gin.Context) {
 	userID := c.GetString("user_id")
 	var commentData CreateCommentRequest
 	if errs := utils.BindUriVerifier(c, &commentData.PostID); errs != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 	if errs := utils.BindJsonVerifier(c, &commentData.Text); errs != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
 	if ch.db.GetPost(commentData.PostID.PostID, "") == nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "the provided post id is not found"})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": types.ErrPostNotFound})
 		return
 	}
 
@@ -69,18 +69,18 @@ func (ch CommentsHandler) Delete(c *gin.Context) {
 	userID := c.GetString("user_id")
 	var commentData DeleteCommentRequest
 	if errs := utils.BindUriVerifier(c, &commentData); errs != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
 	comment := ch.db.GetCommentByID(commentData.ID)
 	if comment == nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "the provided comment id is not found"})
+		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
 
 	if comment.UserID != userID {
-		c.AbortWithStatus(http.StatusUnauthorized)
+		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
 
@@ -95,12 +95,12 @@ func (ch CommentsHandler) Delete(c *gin.Context) {
 func (ch CommentsHandler) Count(c *gin.Context) {
 	var commentData CountCommentsRequest
 	if errs := utils.BindUriVerifier(c, &commentData); errs != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
 	if ch.db.GetPost(commentData.PostID, "") == nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "the provided post id is not found"})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": types.ErrPostNotFound})
 		return
 	}
 

@@ -20,12 +20,12 @@ func NewLikesHandler(db datastore.Database) LikesHandler {
 func (lh LikesHandler) List(c *gin.Context) {
 	var likeData ListLikesRequest
 	if errs := utils.BindUriVerifier(c, &likeData); errs != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
 	if lh.db.GetPost(likeData.PostID, "") == nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "the provided post id is not found"})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": types.ErrPostNotFound})
 		return
 	}
 
@@ -42,19 +42,19 @@ func (lh LikesHandler) Create(c *gin.Context) {
 	userID := c.GetString("user_id")
 	var likeData CreateLikeRequest
 	if errs := utils.BindUriVerifier(c, &likeData); errs != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
 	if lh.db.GetPost(likeData.PostID, "") == nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "the provided post id is not found"})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": types.ErrPostNotFound})
 		return
 	}
 
 	like := &types.Like{UserID: userID, PostID: likeData.PostID}
 
 	if lh.db.Exists(like) {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "duplicate like"})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": types.ErrDuplicateLike})
 		return
 	}
 
@@ -70,20 +70,19 @@ func (lh LikesHandler) Delete(c *gin.Context) {
 	userID := c.GetString("user_id")
 	var likeData DeleteLikeRequest
 	if errs := utils.BindUriVerifier(c, &likeData); errs != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
-	// if lh.db.GetPostByID(likeData.PostID) == nil {
 	if lh.db.GetPost(likeData.PostID, "") == nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "the provided post id is not found"})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": types.ErrPostNotFound})
 		return
 	}
 
 	like := &types.Like{UserID: userID, PostID: likeData.PostID}
 
 	if !lh.db.Exists(like) {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "like not found"})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": types.ErrLikeNotFound})
 		return
 	}
 

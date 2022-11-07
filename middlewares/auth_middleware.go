@@ -10,30 +10,36 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func ParseJWTMiddlware(c *gin.Context) {
-	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
-		c.Next()
-		return
-	}
-	slice := strings.Split(authHeader, " ")
-	if len(slice) != 2 {
-		c.Next()
-		return
-	}
-	jwt := types.JWTObject{}
-	_, err := utils.VerifyJWTCustom(slice[1], &jwt)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Bad token"})
-		return
-	}
-	if datastore.DB.GetUserByID(jwt.UserID) == nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Bad token"})
-		return
-	}
+func ParseJWTMiddleware(db datastore.Database) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.Next()
+			return
+		}
+		slice := strings.Split(authHeader, " ")
+		if len(slice) != 2 {
+			c.Next()
+			return
+		}
+		jwt := types.JWTObject{}
+		_, err, isExpired := utils.VerifyJWTCustom(slice[1], &jwt)
+		if err != nil {
+			if isExpired {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": types.ErrTokenExpired})
+				return
+			}
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": types.ErrBadToken})
+			return
+		}
+		if db.GetUserByID(jwt.UserID) == nil {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": types.ErrUserNotFound})
+			return
+		}
 
-	c.Set("user_id", jwt.UserID)
-	c.Next()
+		c.Set("user_id", jwt.UserID)
+		c.Next()
+	}
 }
 
 func AuthMiddleware(c *gin.Context) {
